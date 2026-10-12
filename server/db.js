@@ -115,8 +115,10 @@ export async function getProductById(id) {
 }
 export async function getUserById(id) {
   if (typeof id !== "string" || !ObjectId.isValid(id)) return null;
-  // TODO: exclude passwordHash with a projection (this returns the full user document)
-  return await Users.findOne({ _id: new ObjectId(id) });
+  return await Users.findOne(
+    { _id: new ObjectId(id) },
+    { projection: { passwordHash: 0 } },
+  );
 }
 export async function addOrder({
   userId,

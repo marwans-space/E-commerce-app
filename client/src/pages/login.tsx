@@ -1,10 +1,89 @@
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
+import z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import meQueryOptions from "../queries/query";
+import { useQuery } from "@tanstack/react-query";
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required.")
+    .pipe(z.email("Invalid email address.")),
+  password: z.string().min(1, "Password is required."),
+});
+type UserData = z.infer<typeof loginSchema>;
+
+async function getLoginError(res: Response) {
+  if (res.status === 429) {
+    return "Too many sign-in attempts. Please try again later.";
+  }
+  if (res.status >= 500) {
+    return "We couldn't sign you in right now. Please try again later.";
+  }
+
+  const body: unknown = await res.json().catch(() => null);
+  if (
+    body &&
+    typeof body === "object" &&
+    "error" in body &&
+    typeof body.error === "string"
+  ) {
+    return body.error;
+  }
+
+  return "Unable to sign in. Please try again.";
+}
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { data: user } = useQuery(meQueryOptions());
+  if (user) {
+    navigate("/profile", { replace: true });
+  }
 
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<UserData>({
+    resolver: zodResolver(loginSchema),
+  });
+  async function onSubmit(data: UserData) {
+    let res: Response;
+    try {
+      res = await fetch("http://localhost:3434/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+    } catch {
+      setError("root", {
+        type: "manual",
+        message:
+          "Unable to connect. Please check your connection and try again.",
+      });
+      return;
+    }
+
+    if (!res.ok) {
+      const message =
+        res.status === 401
+          ? "Invalid email or password."
+          : await getLoginError(res);
+      setError("root", { type: "manual", message });
+      return;
+    }
+
+    navigate("/", { replace: true });
+  }
   return (
     <div className="flex min-h-svh flex-col bg-white px-5 text-black sm:px-8">
       <header className="mx-auto w-full max-w-158 pt-6 text-center sm:pt-8">
@@ -24,25 +103,46 @@ export function Login() {
           <p className="mb-5 text-sm leading-relaxed text-black/55">
             Sign in or create an account
           </p>
-          <form noValidate className="flex flex-col gap-2.5">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            className="flex flex-col gap-2.5"
+          >
             <div className="flex flex-col gap-1">
               <input
-                className={`h-12 w-full rounded-xl border bg-white px-4 text-sm outline-none transition-colors placeholder:text-black/50 hover:border-black/35 focus:ring-2 focus:ring-black/10 sm:text-base `}
+                className={`h-12 w-full rounded-xl border bg-white px-4 text-sm outline-none transition-colors placeholder:text-black/50 hover:border-black/35 focus:ring-2 focus:ring-black/10 sm:text-base ${errors.email ? "border-red-500 hover:border-red-500" : ""}`}
+                {...register("email")}
                 id="email"
                 type="email"
                 placeholder="Email"
                 autoComplete="email"
                 aria-label="Email"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
               />
             </div>
+            {errors.email?.message && (
+              <p
+                id="email-error"
+                className="text-xs font-medium leading-relaxed text-red-600"
+                role="alert"
+              >
+                {errors.email.message}
+              </p>
+            )}
             <div className="relative">
               <input
-                className={`h-12 w-full rounded-xl border bg-white px-4 pr-16 text-sm outline-none transition-colors placeholder:text-black/50 hover:border-black/35 focus:ring-2 focus:ring-black/10 sm:text-base `}
+                className={`h-12 w-full rounded-xl border bg-white px-4 pr-16 text-sm outline-none transition-colors placeholder:text-black/50 hover:border-black/35 focus:ring-2 focus:ring-black/10 sm:text-base ${errors.password ? "border-red-500 hover:border-red-500" : ""}`}
+                {...register("password")}
                 id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 autoComplete="current-password"
                 aria-label="Password"
+                aria-invalid={!!errors.password}
+                aria-describedby={
+                  errors.password ? "password-error" : undefined
+                }
               />
               <button
                 className="absolute inset-y-0 right-3 my-auto h-fit rounded px-1 py-1 text-xs font-semibold text-black/60 underline underline-offset-2 hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
@@ -54,12 +154,30 @@ export function Login() {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            {errors.password?.message && (
+              <p
+                id="password-error"
+                className="text-xs font-medium leading-relaxed text-red-600"
+                role="alert"
+              >
+                {errors.password.message}
+              </p>
+            )}
+            {errors.root?.message && (
+              <p
+                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium leading-relaxed text-red-700"
+                role="alert"
+              >
+                {errors.root.message}
+              </p>
+            )}
 
             <button
               className="mt-1 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-black px-6 text-sm font-semibold text-white transition-colors hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black disabled:cursor-wait disabled:opacity-60 sm:text-base"
               type="submit"
+              disabled={isSubmitting}
             >
-              Continue
+              {!isSubmitting ? "Continue" : "Signing in..."}
             </button>
           </form>
           <p className="mt-4 mb-0 text-center text-xs leading-relaxed text-black/60 sm:text-sm">

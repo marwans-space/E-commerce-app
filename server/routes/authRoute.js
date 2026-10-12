@@ -35,9 +35,14 @@ const signToken = (user) =>
 
 // TODO: front-end profile page will also need email and profileImg here (or from GET /profile)
 const publicUser = (user) => ({
-  id: user._id,
+  _id: user._id,
   name: user.name,
   role: user.role,
+  profileImg: user.profileImg,
+  cart: user.cart,
+  wishlist: user.wishlist,
+  address: user.address,
+  number: user.number,
 });
 
 const normalizeEmail = (email) => email.trim().toLowerCase();
