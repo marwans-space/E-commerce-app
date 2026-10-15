@@ -1,7 +1,7 @@
 import { Link } from "react-router";
-import type { Product } from "../types/product";
+import type { ProductCardProps } from "../types/product";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: ProductCardProps) {
   return (
     <article className="min-w-0">
       <Link
@@ -10,7 +10,7 @@ export function ProductCard({ product }: { product: Product }) {
       >
         <img
           className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.045]"
-          src={product.img}
+          src={product.imgs[0]}
           alt={product.name}
           loading="lazy"
         />

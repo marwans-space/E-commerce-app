@@ -24,7 +24,7 @@ async function fetchProducts(url: string): Promise<Product[]> {
     throw new Error(`HTTP Error! status: ${res.status}`);
   }
   const data = await res.json();
-  return data.items;
+  return data.categories;
 }
 
 export function Category() {

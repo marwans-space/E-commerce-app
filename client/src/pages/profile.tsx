@@ -1,17 +1,7 @@
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import meQueryOptions from "../queries/query.ts";
-
-type User = {
-  _id: string;
-  name: string;
-  cart: [];
-  wishlist: [];
-  profileImg: string;
-  role: string;
-  address: string;
-  number: string;
-};
+import type { User } from "../types/user";
 
 export function Profile() {
   const { data, isPending, isError, refetch } = useQuery(meQueryOptions());

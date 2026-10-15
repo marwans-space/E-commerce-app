@@ -32,7 +32,7 @@ async function getCartDetails(userId) {
       quantity: item.quantity,
       name: product?.name ?? null,
       price: product?.price ?? null,
-      img: product?.img ?? null,
+      img: product?.imgs?.[0] ?? product?.img ?? null,
       color: product?.color ?? null,
       size: product?.size ?? null,
       isAvailable,

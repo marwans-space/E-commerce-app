@@ -8,7 +8,7 @@ const router = express.Router();
    ====================================================================== */
 
 // GET (list): /products?category=hoodie&page=1&limit=12
-router.get("/products", async (req, res) => {
+/* router.get("/products", async (req, res) => {
   const { category } = req.query;
   const page = Math.max(parseInt(req.query.page) || 1, 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit) || 12, 1), 50);
@@ -28,7 +28,7 @@ router.get("/products", async (req, res) => {
   return res
     .status(200)
     .json({ items, page, totalPages: Math.ceil(total / limit), total });
-});
+}); */
 
 // GET (featured, home page). Must stay ABOVE /products/:id
 router.get("/products/featured", async (req, res) => {
@@ -41,7 +41,7 @@ router.get("/products/featured", async (req, res) => {
 
 // GET (categories for the menu / categories page)
 router.get("/products", async (req, res) => {
-  const categories = await Products.find({ isListed: true });
+  const categories = await Products.find({ isListed: true }).toArray();
   return res.status(200).json({ categories });
 });
 

@@ -1,12 +1,6 @@
-export type Review = {
-  userId: string;
-  _id: string;
-  username: string;
-  text: string;
-  rating: number;
-};
+import type { TestimonialCardProps } from "../types/review";
 
-export function TestimonialCard({ review }: { review: Review }) {
+export function TestimonialCard({ review }: TestimonialCardProps) {
   const starCount = Number.isFinite(review.rating)
     ? Math.max(0, Math.min(5, Math.floor(review.rating)))
     : 0;
@@ -32,7 +26,7 @@ export function TestimonialCard({ review }: { review: Review }) {
           </svg>
         ))}
       </div>
-      <h3 className="mb-2 text-base font-bold">{review.username}</h3>
+      <h3 className="mb-2 text-base font-bold">{review.name}</h3>
       <blockquote className="m-0 text-sm leading-[1.65] text-black/60">
         “{review.text}”
       </blockquote>

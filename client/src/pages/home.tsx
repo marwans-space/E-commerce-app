@@ -3,15 +3,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ProductCard } from "../components/ProductCard";
 import { TestimonialCard } from "../components/TestimonialCard";
-import type { Product } from "../types/product";
-import type { Review } from "../components/TestimonialCard";
+import type { Product, ProductListResponse } from "../types/product";
+import type { Review, ReviewListResponse } from "../types/review";
 const SHOP_CATEGORIES: string[] = [
-  "T-shirts",
-  "Hoodies",
+  "T-shirt",
+  "Hoodie",
   "Sweatpants",
-
   "Jeans",
-  "Shirts",
+  "Shirt",
 ];
 async function fetchProducts(url: string): Promise<Product[]> {
   const res = await fetch(url, {
@@ -24,8 +23,8 @@ async function fetchProducts(url: string): Promise<Product[]> {
   if (!res.ok) {
     throw new Error(`HTTP Error! status: ${res.status}`);
   }
-  const data: { items: Product[] } = await res.json();
-  return data.items as Product[];
+  const data: ProductListResponse = await res.json();
+  return data.items;
 }
 async function fetchReviews(url: string): Promise<Review[]> {
   const res = await fetch(url, {
@@ -38,7 +37,7 @@ async function fetchReviews(url: string): Promise<Review[]> {
   if (!res.ok) {
     throw new Error(`HTTP Error! status: ${res.status}`);
   }
-  const data: { reviews: Review[] } = await res.json();
+  const data: ReviewListResponse = await res.json();
   return data.reviews;
 }
 
@@ -164,11 +163,13 @@ export function Home() {
           {SHOP_CATEGORIES.map((category) => (
             <Link
               className="flex min-h-28 min-w-0 items-center justify-between gap-3 rounded-xl bg-white p-4 text-lg leading-tight font-bold transition-colors hover:bg-black hover:text-white min-[420px]:min-h-32 min-[420px]:p-5 md:min-h-40 md:rounded-2xl md:p-7 md:text-2xl"
-              to={`/category/${category}`}
+              to={`/category/${category.toLowerCase()}`}
               key={category}
             >
-              <span className="break-words">{category}</span>
-              <span aria-hidden="true" className="shrink-0">→</span>
+              <span className="wrap-break-word">{category}</span>
+              <span aria-hidden="true" className="shrink-0">
+                →
+              </span>
             </Link>
           ))}
         </div>

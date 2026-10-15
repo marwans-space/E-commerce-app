@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import meQueryOptions from "../queries/query";
 import { useQuery } from "@tanstack/react-query";
+import type { LoginFormData } from "../types/auth";
 
 const loginSchema = z.object({
   email: z
@@ -14,8 +15,6 @@ const loginSchema = z.object({
     .pipe(z.email("Invalid email address.")),
   password: z.string().min(1, "Password is required."),
 });
-type UserData = z.infer<typeof loginSchema>;
-
 async function getLoginError(res: Response) {
   if (res.status === 429) {
     return "Too many sign-in attempts. Please try again later.";
@@ -50,10 +49,10 @@ export function Login() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<UserData>({
+  } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
-  async function onSubmit(data: UserData) {
+  async function onSubmit(data: LoginFormData) {
     let res: Response;
     try {
       res = await fetch("http://localhost:3434/auth/login", {

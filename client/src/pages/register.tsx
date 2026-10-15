@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import meQueryOptions from "../queries/query";
+import type { RegisterFormData } from "../types/auth";
 
 const registerSchema = z
   .object({
@@ -33,8 +34,6 @@ const registerSchema = z
     message: "Passwords do not match.",
     path: ["confirmPassword"],
   });
-type RegisterData = z.infer<typeof registerSchema>;
-
 export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -48,8 +47,8 @@ export function Register() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterData>({ resolver: zodResolver(registerSchema) });
-  async function onSubmit(data: RegisterData) {
+  } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) });
+  async function onSubmit(data: RegisterFormData) {
     const name = data.firstName + " " + data.lastName;
     const body = { name, email: data.email, password: data.password };
     let res: Response;
