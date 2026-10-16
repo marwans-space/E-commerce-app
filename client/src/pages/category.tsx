@@ -4,6 +4,8 @@ import { Link, useNavigate, useParams } from "react-router";
 import type { Product } from "../types/product";
 import { ProductCard } from "../components/ProductCard";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const categoryTabs = [
   { label: "All", value: "all" },
   { label: "T-Shirts", value: "t-shirt" },
@@ -46,7 +48,7 @@ export function Category() {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts("http://localhost:3434/api/products");
+        const data = await fetchProducts(API_URL + "/api/products");
         setProducts(data);
       } catch {
         setError("Products could not be loaded. Please try again later.");

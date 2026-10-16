@@ -17,10 +17,11 @@ const DUMMY_HASH = bcrypt.hashSync("dummy-password", 10);
 // TODO(security): when the front-end is on a different domain than the API, sameSite "lax" cookies are not sent
 // on cross-site fetch requests. You'll need sameSite: "none" + secure: true, plus CORS credentials (index.js)
 // and CSRF protection (Origin check or CSRF token). Deferred item, but it will break login in production.
+const isProd = process.env.NODE_ENV === "production";
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV !== "development",
-  sameSite: "lax",
+  secure: isProd,
+  sameSite: isProd ? "none" : "lax",
   maxAge: 24 * 60 * 60 * 1000,
 };
 
@@ -121,7 +122,6 @@ router.post("/register", async (req, res, next) => {
       email: normalizeEmail(email),
       passwordHash,
     });
-    console.log(req.body, user);
     res.cookie("token", signToken(user), cookieOptions);
     return res.status(201).json({ user: publicUser(user) });
   } catch (err) {

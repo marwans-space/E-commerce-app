@@ -49,8 +49,15 @@ const port = env.PORT ?? 3000;
 app.use(express.json());
 // TODO(security): restrict CORS: cors({ origin: process.env.CLIENT_URL, credentials: true }).
 // Open cors() will not send cookies cross-origin, and allows any site to call the API.
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
+app.use((req, res, next) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+  if (req.get("origin") !== env.CLIENT_URL) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  next();
+});
 // TODO(security): rate limiter on /auth (login/register) and a looser global limiter on /api
 // TODO(security): if the front-end is on a different domain, cookies need sameSite: "none" + secure
 // (see authRoute.js) and then you need CSRF protection (check Origin header or CSRF token).

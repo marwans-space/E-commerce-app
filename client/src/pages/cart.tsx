@@ -1,33 +1,16 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
+import CartSkeleton from "../components/CartSkeleton";
+import { type CartItem } from "../types/cart";
+import meQueryOptions from "../queries/query";
+import z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-export type CartItem = {
-  productId: string;
-  quantity: number;
-  name: string | null;
-  price: number | null;
-  img: string | null;
-  color: string | string[] | null;
-  size: string | string[] | null;
-  isAvailable: boolean;
-  lineTotal: number;
-};
+const API_URL = import.meta.env.VITE_API_URL;
 
-type CheckoutDetails = {
-  shippingAddress: string;
-  userNumber: string;
-};
-
-type CartProps = {
-  cartItems?: CartItem[];
-  isLoading?: boolean;
-  shippingAddress?: string;
-  userNumber?: string;
-  onQuantityChange?: (productId: string, quantity: number) => void;
-  onRemoveItem?: (productId: string) => void;
-  onPlaceOrder?: (details: CheckoutDetails) => void;
-};
-
+// ======= Cart =======
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -35,72 +18,211 @@ function formatPrice(price: number) {
     maximumFractionDigits: 2,
   }).format(price);
 }
-
 function getOptionLabel(value: CartItem["color"]) {
   if (Array.isArray(value)) return value.join(", ");
   return value ?? "";
 }
-
-function CartSkeleton() {
-  return (
-    <main
-      aria-busy="true"
-      aria-label="Loading cart"
-      className="mx-auto w-[calc(100%-36px)] max-w-310 pb-20 pt-6 text-black md:w-[calc(100%-48px)] md:pt-10 lg:w-[min(1240px,calc(100%-64px))]"
-    >
-      <div className="mb-5 h-4 w-32 animate-pulse rounded bg-[#f0f0f0] md:mb-6" />
-      <div className="mb-7 h-10 w-52 animate-pulse rounded bg-[#f0f0f0]" />
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
-        <section className="space-y-4 rounded-[20px] border border-black/10 p-5 sm:p-6">
-          {Array.from({ length: 3 }, (_, index) => (
-            <div
-              className="flex gap-4 border-b border-black/10 pb-4 last:border-0 last:pb-0"
-              key={index}
-            >
-              <div className="size-24 shrink-0 animate-pulse rounded-xl bg-[#f0f0f0] sm:size-28" />
-              <div className="flex flex-1 flex-col justify-between py-1">
-                <div className="space-y-2">
-                  <div className="h-5 w-2/3 animate-pulse rounded bg-[#f0f0f0]" />
-                  <div className="h-4 w-1/3 animate-pulse rounded bg-[#f0f0f0]" />
-                </div>
-                <div className="h-6 w-16 animate-pulse rounded bg-[#f0f0f0]" />
-              </div>
-            </div>
-          ))}
-        </section>
-        <section className="space-y-5 rounded-[20px] border border-black/10 p-5 sm:p-6">
-          <div className="h-6 w-40 animate-pulse rounded bg-[#f0f0f0]" />
-          <div className="h-4 w-full animate-pulse rounded bg-[#f0f0f0]" />
-          <div className="h-4 w-full animate-pulse rounded bg-[#f0f0f0]" />
-          <div className="h-12 w-full animate-pulse rounded-full bg-[#f0f0f0]" />
-          <div className="h-12 w-full animate-pulse rounded-full bg-[#f0f0f0]" />
-          <div className="h-12 w-full animate-pulse rounded-full bg-[#f0f0f0]" />
-        </section>
-      </div>
-    </main>
-  );
+async function getCart(url: string): Promise<CartItem[]> {
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+    },
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP Error!: status: ${res.status}`);
+  }
+  return await res.json();
 }
+async function updateCart(url: string, body: string): Promise<void> {
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: body,
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP Error! status:${res.status}`);
+  }
+  await res.json();
+}
+async function removeCartItem(url: string): Promise<void> {
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: { Accept: "application/json" },
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP Error! status:${res.status}`);
+  }
+  await res.json();
+}
+// ======= Order ========
+const orderSchema = z.object({
+  name: z.string().trim().min(1, "Name is required.").max(100),
+  shippingAddress: z
+    .string()
+    .trim()
+    .min(1, "Delivery address is required.")
+    .max(200),
+  userNumber: z
+    .string()
+    .trim()
+    .min(11, "Phone number must be at least 11 characters.")
+    .max(20, "Phone number must be at most 20 characters."),
+});
+type OrderData = {
+  name: string;
+  shippingAddress: string;
+  userNumber: string;
+};
+async function addOrder(url: string, body: string) {
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: body,
+    });
+  } catch {
+    throw new Error(
+      "Unable to connect. Please check your connection and try again.",
+    );
+  }
+  if (!res.ok) {
+    const response: unknown = await res.json().catch(() => null);
+    const message =
+      response &&
+      typeof response === "object" &&
+      "error" in response &&
+      typeof response.error === "string"
+        ? response.error
+        : "Unable to place your order. Please try again.";
+    throw new Error(message);
+  }
+  return await res.json();
+}
+export function Cart() {
+  const queryClient = useQueryClient();
+  const {
+    data: user,
+    isPending: isUserLoading,
+    isError: isUserError,
+  } = useQuery(meQueryOptions());
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCartUpdating, setIsCartUpdating] = useState(false);
+  const [cartActionError, setCartActionError] = useState("");
+  const [orderSuccess, setOrderSuccess] = useState("");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<OrderData>({
+    resolver: zodResolver(orderSchema),
+    defaultValues: {
+      name: "",
+      shippingAddress: "",
+      userNumber: "",
+    },
+  });
 
-export function Cart({
-  cartItems = [],
-  isLoading = false,
-  shippingAddress: initialAddress = "",
-  userNumber: initialNumber = "",
-  onQuantityChange,
-  onRemoveItem,
-  onPlaceOrder,
-}: CartProps) {
-  const [shippingAddress, setShippingAddress] = useState(initialAddress);
-  const [userNumber, setUserNumber] = useState(initialNumber);
-  const total = cartItems.reduce((sum, item) => sum + item.lineTotal, 0);
+  useEffect(() => {
+    if (!user) return;
+    reset({
+      name: user.name ?? "",
+      shippingAddress: user.address ?? "",
+      userNumber: user.number ?? "",
+    });
+  }, [reset, user]);
 
-  function submitOrder(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    onPlaceOrder?.({ shippingAddress, userNumber });
+  const subtotal = cart.reduce((acc, prod) => {
+    const { price, quantity } = prod;
+    return acc + price * quantity;
+  }, 0);
+
+  async function changeQuantity(productId: string, quantity: number) {
+    if (isCartUpdating || quantity < 1 || quantity > 99) return;
+
+    setIsCartUpdating(true);
+    setCartActionError("");
+    try {
+      await updateCart(
+        `${API_URL}/api/cart/${encodeURIComponent(productId)}`,
+        JSON.stringify({ quantity }),
+      );
+      setCart(await getCart(API_URL + "/api/cart"));
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+    } catch (error) {
+      setCartActionError(
+        error instanceof Error ? error.message : "Unable to update cart",
+      );
+    } finally {
+      setIsCartUpdating(false);
+    }
   }
 
-  if (isLoading) return <CartSkeleton />;
+  async function removeItem(productId: string) {
+    if (isCartUpdating) return;
 
+    setIsCartUpdating(true);
+    setCartActionError("");
+    try {
+      await removeCartItem(
+        `${API_URL}/api/cart/${encodeURIComponent(productId)}`,
+      );
+      setCart(await getCart(API_URL + "/api/cart"));
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+    } catch (error) {
+      setCartActionError(
+        error instanceof Error ? error.message : "Unable to remove item",
+      );
+    } finally {
+      setIsCartUpdating(false);
+    }
+  }
+  const onSubmit = async (data: OrderData) => {
+    setOrderSuccess("");
+    try {
+      await addOrder(API_URL + "/api/add-order", JSON.stringify(data));
+      setCart([]);
+      setOrderSuccess("Your order was placed successfully.");
+      window.scrollTo(0, 0);
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+    } catch (error) {
+      setError("root", {
+        type: "manual",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to place your order. Please try again.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isUserLoading || (!user && !isUserError)) return;
+
+    async function loadCart() {
+      setIsLoading(true);
+      try {
+        const data = await getCart(API_URL + "/api/cart");
+        setCart(data);
+      } catch (error) {
+        setCartActionError(
+          error instanceof Error ? error.message : "Unable to load cart",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadCart();
+  }, [isUserError, isUserLoading, user]);
+  if (isUserLoading || isLoading) return <CartSkeleton />;
   return (
     <main className="mx-auto min-h-[45vh] w-[calc(100%-36px)] max-w-310 pb-20 pt-6 text-black md:w-[calc(100%-48px)] md:pt-10 lg:w-[min(1240px,calc(100%-64px))]">
       <nav
@@ -125,7 +247,28 @@ export function Cart({
         YOUR CART
       </h1>
 
-      {cartItems.length === 0 ? (
+      {orderSuccess && (
+        <p className="mb-5 text-sm text-green-700" role="status">
+          {orderSuccess}
+        </p>
+      )}
+
+      {!user && !isUserError ? (
+        <section className="rounded-[20px] border border-black/10 px-5 py-14 text-center md:py-20">
+          <>
+            <h2 className="mb-2 text-xl font-bold">Your cart is empty</h2>
+            <p className="mb-7 text-sm text-black/60">
+              Looks like you haven't added anything to your cart yet.
+            </p>
+            <Link
+              className="inline-flex min-h-12 items-center justify-center rounded-full bg-black px-8 text-sm font-medium text-white transition-colors hover:bg-black/80"
+              to="/"
+            >
+              Continue shopping
+            </Link>
+          </>
+        </section>
+      ) : cart.length === 0 ? (
         <section className="rounded-[20px] border border-black/10 px-5 py-14 text-center md:py-20">
           <>
             <h2 className="mb-2 text-xl font-bold">Your cart is empty</h2>
@@ -146,8 +289,13 @@ export function Cart({
             aria-label="Cart items"
             className="rounded-[20px] border border-black/10 p-4 sm:p-6"
           >
+            {cartActionError && (
+              <p className="mb-4 text-sm text-red-600" role="alert">
+                {cartActionError}
+              </p>
+            )}
             <ul className="m-0 list-none divide-y divide-black/10 p-0">
-              {cartItems.map((item) => (
+              {cart.map((item) => (
                 <li
                   className="flex gap-4 py-4 first:pt-0 last:pb-0 sm:gap-5"
                   key={item.productId}
@@ -179,17 +327,12 @@ export function Cart({
                             .filter(Boolean)
                             .join(" · ") || "Standard"}
                         </p>
-                        {!item.isAvailable && (
-                          <p className="mt-1 text-xs text-red-700">
-                            This product is no longer available.
-                          </p>
-                        )}
                       </div>
                       <button
                         aria-label={`Remove ${item.name ?? "product"} from cart`}
                         className="cursor-pointer p-1 text-lg leading-none text-red-500 transition-colors hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
-                        disabled={!onRemoveItem}
-                        onClick={() => onRemoveItem?.(item.productId)}
+                        disabled={isCartUpdating}
+                        onClick={() => removeItem(item.productId)}
                         type="button"
                       >
                         ×
@@ -203,9 +346,9 @@ export function Cart({
                         <button
                           aria-label={`Decrease ${item.name ?? "product"} quantity`}
                           className="cursor-pointer text-lg leading-none disabled:cursor-not-allowed disabled:opacity-40"
-                          disabled={item.quantity <= 1 || !onQuantityChange}
+                          disabled={isCartUpdating || item.quantity <= 1}
                           onClick={() =>
-                            onQuantityChange?.(item.productId, item.quantity - 1)
+                            changeQuantity(item.productId, item.quantity - 1)
                           }
                           type="button"
                         >
@@ -220,9 +363,9 @@ export function Cart({
                         <button
                           aria-label={`Increase ${item.name ?? "product"} quantity`}
                           className="cursor-pointer text-lg leading-none disabled:cursor-not-allowed disabled:opacity-40"
-                          disabled={item.quantity >= 99 || !onQuantityChange}
+                          disabled={isCartUpdating || item.quantity >= 99}
                           onClick={() =>
-                            onQuantityChange?.(item.productId, item.quantity + 1)
+                            changeQuantity(item.productId, item.quantity + 1)
                           }
                           type="button"
                         >
@@ -243,63 +386,97 @@ export function Cart({
             <dl className="m-0 space-y-4 border-b border-black/10 pb-5">
               <div className="flex items-center justify-between gap-4 text-sm">
                 <dt className="text-black/55">Subtotal</dt>
-                <dd className="m-0 font-semibold">{formatPrice(total)}</dd>
+                <dd className="m-0 font-semibold">{formatPrice(subtotal)}</dd>
               </div>
               <div className="flex items-center justify-between gap-4 text-sm">
                 <dt className="text-black/55">Delivery fee</dt>
-                <dd className="m-0 font-semibold">{formatPrice(0)}</dd>
+                <dd className="m-0 font-semibold">{formatPrice(20)}</dd>
               </div>
             </dl>
             <div className="flex items-center justify-between gap-4 py-5">
               <span className="font-medium">Total</span>
-              <span className="text-xl font-bold">{formatPrice(total)}</span>
+              <span className="text-xl font-bold">
+                {formatPrice(subtotal + 20)}
+              </span>
             </div>
 
-            <form className="space-y-4" onSubmit={submitOrder}>
+            <form
+              className="space-y-4"
+              noValidate
+              onSubmit={handleSubmit(onSubmit)}
+            >
+              {errors.root?.message && (
+                <p className="text-sm text-red-600" role="alert">
+                  {errors.root.message}
+                </p>
+              )}
+              <label className="block text-sm font-medium" htmlFor="name">
+                Name
+                <input
+                  {...register("name")}
+                  autoComplete="name"
+                  className="mt-2 h-12 w-full resize-y rounded-xl border border-black/15 px-4 py-3 text-sm font-normal outline-none transition focus:border-black"
+                  id="name"
+                  type="text"
+                  placeholder="Enter your name"
+                  aria-invalid={!!errors.name}
+                />
+              </label>
+              {errors.name?.message && (
+                <p className="text-xs text-red-600" role="alert">
+                  {errors.name.message}
+                </p>
+              )}
               <label
                 className="block text-sm font-medium"
                 htmlFor="shipping-address"
               >
                 Delivery address
-                <textarea
+                <input
+                  {...register("shippingAddress")}
                   autoComplete="street-address"
-                  className="mt-2 min-h-24 w-full resize-y rounded-xl border border-black/15 px-4 py-3 text-sm font-normal outline-none transition focus:border-black"
+                  className="mt-2 h-12 w-full resize-y rounded-xl border border-black/15 px-4 py-3 text-sm font-normal outline-none transition focus:border-black"
                   id="shipping-address"
-                  maxLength={300}
-                  onChange={(event) => setShippingAddress(event.target.value)}
+                  type="text"
                   placeholder="Enter your delivery address"
-                  required
-                  value={shippingAddress}
+                  aria-invalid={!!errors.shippingAddress}
                 />
               </label>
-              <label className="block text-sm font-medium" htmlFor="user-number">
+              {errors.shippingAddress?.message && (
+                <p className="text-xs text-red-600" role="alert">
+                  {errors.shippingAddress.message}
+                </p>
+              )}
+              <label
+                className="block text-sm font-medium"
+                htmlFor="user-number"
+              >
                 Phone number
                 <input
+                  {...register("userNumber")}
                   autoComplete="tel"
                   className="mt-2 h-12 w-full rounded-xl border border-black/15 px-4 text-sm font-normal outline-none transition focus:border-black"
                   id="user-number"
                   maxLength={20}
-                  onChange={(event) => setUserNumber(event.target.value)}
                   placeholder="Enter your phone number"
-                  required
                   type="tel"
-                  value={userNumber}
+                  aria-invalid={!!errors.userNumber}
                 />
               </label>
+              {errors.userNumber?.message && (
+                <p className="text-xs text-red-600" role="alert">
+                  {errors.userNumber.message}
+                </p>
+              )}
               <button
                 className="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-black px-6 text-sm font-semibold text-white transition-colors hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={!onPlaceOrder || cartItems.some((item) => !item.isAvailable)}
+                disabled={isSubmitting}
                 type="submit"
               >
-                Place order
+                {isSubmitting ? "Placing order..." : "Place order"}
                 <span aria-hidden="true">→</span>
               </button>
             </form>
-            {cartItems.some((item) => !item.isAvailable) && (
-              <p className="mt-3 text-sm text-red-700">
-                Remove unavailable products before placing your order.
-              </p>
-            )}
           </section>
         </div>
       )}

@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import meQueryOptions from "../queries/query";
 import type { RegisterFormData } from "../types/auth";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const registerSchema = z
   .object({
     firstName: z
@@ -53,7 +55,7 @@ export function Register() {
     const body = { name, email: data.email, password: data.password };
     let res: Response;
     try {
-      res = await fetch("http://localhost:3434/auth/register", {
+      res = await fetch(API_URL + "/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,11 +1,12 @@
-import { Link, useNavigate } from "react-router";
+import { Link, Navigate } from "react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import meQueryOptions from "../queries/query";
-import { useQuery } from "@tanstack/react-query";
-import type { LoginFormData } from "../types/auth";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const loginSchema = z.object({
   email: z
@@ -15,6 +16,7 @@ const loginSchema = z.object({
     .pipe(z.email("Invalid email address.")),
   password: z.string().min(1, "Password is required."),
 });
+type LoginFormData = z.infer<typeof loginSchema>;
 async function getLoginError(res: Response) {
   if (res.status === 429) {
     return "Too many sign-in attempts. Please try again later.";
@@ -38,11 +40,8 @@ async function getLoginError(res: Response) {
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: user } = useQuery(meQueryOptions());
-  if (user) {
-    navigate("/profile", { replace: true });
-  }
 
   const {
     register,
@@ -52,10 +51,11 @@ export function Login() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+  if (user) return <Navigate to="/profile" replace />;
   async function onSubmit(data: LoginFormData) {
     let res: Response;
     try {
-      res = await fetch("http://localhost:3434/auth/login", {
+      res = await fetch(API_URL + "/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -81,7 +81,8 @@ export function Login() {
       return;
     }
 
-    navigate("/", { replace: true });
+    const body = await res.json();
+    queryClient.setQueryData(meQueryOptions().queryKey, body.user);
   }
   return (
     <div className="flex min-h-svh flex-col bg-white px-5 text-black sm:px-8">

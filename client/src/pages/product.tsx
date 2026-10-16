@@ -9,6 +9,8 @@ import type { Product as ProductData } from "../types/product";
 import { TestimonialCard } from "../components/TestimonialCard";
 import { ProductCard } from "../components/ProductCard";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 class ProductNotFoundError extends Error {}
 
 async function getProduct(
@@ -52,7 +54,7 @@ async function addToCart(
   color: string,
   size: string,
 ) {
-  const res = await fetch("http://localhost:3434/api/add-to-cart", {
+  const res = await fetch(API_URL + "/api/add-to-cart", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -116,7 +118,7 @@ export function Product() {
       setProduct(null);
       setProductError(null);
       try {
-        const url = `http://localhost:3434/api/products/${productId}`;
+        const url = `${API_URL}/api/products/${productId}`;
         const data: ProductData = await getProduct(url, controller.signal);
         setProduct(data);
         setSelectedColor("");
@@ -135,7 +137,7 @@ export function Product() {
     }
     async function loadFeatured() {
       try {
-        const url = `http://localhost:3434/api/products/featured`;
+        const url = `${API_URL}/api/products/featured`;
         const data = await getFeatured(url, controller.signal);
         setFeatured(data);
       } catch (err) {

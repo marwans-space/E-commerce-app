@@ -151,6 +151,13 @@ export async function addOrder({
     _id: insertedId,
   };
 }
+export async function getOrderById(id) {
+  const userId = new ObjectId(id);
+  return await Orders.find(
+    { userId: userId },
+    { sort: { createdAt: -1 } },
+  ).toArray();
+}
 
 // TODO: add the optional stock/inventory decision (no stock field exists, nothing stops over-ordering)
 // TODO: graceful close: export a closeDB() that calls client.close()

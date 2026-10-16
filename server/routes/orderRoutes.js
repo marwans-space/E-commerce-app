@@ -1,5 +1,6 @@
 import express from "express";
 import isObjectId from "../utils/objectId.js";
+import { ObjectId } from "mongodb";
 import {
   Users,
   Products,
@@ -10,6 +11,7 @@ import {
   addOrder,
   getProducts,
   getOrders,
+  getOrderById,
 } from "../db.js";
 import authenticate from "../middleware/authenticate.js";
 import authorize from "../middleware/authorize.js";
@@ -20,7 +22,13 @@ const router = express.Router();
    ====================================================================== */
 
 // GET
-// TODO: GET /orders/me  (the logged-in user's own orders, newest first, paginated)
+router.get("/orders/me", authenticate, authorize("user"), async (req, res) => {
+  const orders = await getOrderById(req.user.id);
+  if (!orders) {
+    res.status(404).json({ error: "User doesn't have orders" });
+  }
+  res.status(200).json(orders);
+});
 // TODO: GET /orders/me/:id  (one order, 404 if it belongs to someone else)
 
 // POST
@@ -68,11 +76,12 @@ router.post("/add-order", authenticate, authorize("user"), async (req, res) => {
   const priceById = new Map(products.map((p) => [p._id.toString(), p.price]));
 
   // TODO: round the total to 2 decimals (14.99 * 3 gives float artifacts)
-  const totalPrice = user.cart.reduce(
-    (sum, item) =>
-      sum + priceById.get(item.productId.toString()) * item.quantity,
-    0,
-  );
+  const totalPrice =
+    user.cart.reduce(
+      (sum, item) =>
+        sum + priceById.get(item.productId.toString()) * item.quantity,
+      0,
+    ) + 20;
   const order = {
     userId,
     userName: user.name,
@@ -82,7 +91,6 @@ router.post("/add-order", authenticate, authorize("user"), async (req, res) => {
     items: user.cart,
     totalPrice,
   };
-  // BUG: addOrder() generates a broken orderNo (see db.js)
   const placedOrder = await addOrder(order);
   await Users.updateOne(
     { _id: userId },

@@ -1,7 +1,7 @@
 import express from "express";
 import { ObjectId } from "mongodb";
 import isObjectId from "../utils/objectId.js";
-import { Users, Products, getProductById } from "../db.js";
+import { Users, Products, getProductById, getUserById } from "../db.js";
 import authenticate from "../middleware/authenticate.js";
 import authorize from "../middleware/authorize.js";
 
@@ -11,39 +11,6 @@ const round2 = (n) => Math.round(n * 100) / 100;
 
 // Builds the cart the front-end can display: each line has the product details,
 // the line total, and whether the product can still be bought. Every cart route returns this shape.
-async function getCartDetails(userId) {
-  const user = await Users.findOne(
-    { _id: userId },
-    { projection: { cart: 1 } },
-  );
-  if (!user) return null;
-
-  const cart = user.cart ?? [];
-  const products = await Products.find({
-    _id: { $in: cart.map((item) => item.productId) },
-  }).toArray();
-  const productById = new Map(products.map((p) => [p._id.toString(), p]));
-
-  const items = cart.map((item) => {
-    const product = productById.get(item.productId.toString());
-    const isAvailable = Boolean(product?.isListed);
-    return {
-      productId: item.productId,
-      quantity: item.quantity,
-      name: product?.name ?? null,
-      price: product?.price ?? null,
-      img: product?.imgs?.[0] ?? product?.img ?? null,
-      color: product?.color ?? null,
-      size: product?.size ?? null,
-      isAvailable,
-      lineTotal: isAvailable ? round2(product.price * item.quantity) : 0,
-    };
-  });
-
-  // unavailable items are not counted (checkout rejects them until they're removed)
-  const total = round2(items.reduce((sum, item) => sum + item.lineTotal, 0));
-  return { cart: items, total };
-}
 
 /* ======================================================================
    client/cart
@@ -51,9 +18,27 @@ async function getCartDetails(userId) {
 
 // GET
 router.get("/cart", authenticate, authorize("user"), async (req, res) => {
-  const details = await getCartDetails(new ObjectId(req.user.id));
-  if (!details) return res.status(404).json({ error: "User not found" });
-  return res.status(200).json(details);
+  const user = await getUserById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+  const userCart = user.cart;
+  const cart = await Promise.all(
+    userCart.map(async (product) => {
+      const id = new ObjectId(product.productId);
+      const item = await Products.findOne({ _id: id });
+      return {
+        name: item.name,
+        price: item.price,
+        img: item.imgs[0],
+        productId: item._id,
+        quantity: product.quantity,
+        color: product.color,
+        size: product.size,
+      };
+    }),
+  );
+  return res.status(200).json(cart);
 });
 
 // POST
@@ -63,7 +48,7 @@ router.post(
   authorize("user"),
   async (req, res) => {
     // get the cart items from the req body
-    const { productId, quantity = 1 } = req.body ?? {};
+    const { productId, quantity = 1, color, size } = req.body ?? {};
 
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
       return res
@@ -96,11 +81,13 @@ router.post(
     if (bumped.matchedCount === 0) {
       await Users.updateOne(
         { _id: userId },
-        { $push: { cart: { productId: product._id, quantity } } },
+        { $push: { cart: { productId: product._id, quantity, color, size } } },
       );
     }
     // 200
-    return res.status(200).json(await getCartDetails(userId));
+    return res
+      .status(200)
+      .json(await Users.findOne({ _id: userId }, { projection: { cart: 1 } }));
   },
 );
 
@@ -129,7 +116,11 @@ router.patch(
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: "Item not in cart" });
     }
-    return res.status(200).json(await getCartDetails(userId));
+    const cart = await Users.findOne(
+      { _id: userId },
+      { projection: { cart: 1 } },
+    );
+    return res.status(200).json(cart.cart);
   },
 );
 
@@ -153,7 +144,12 @@ router.delete(
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: "Item not in cart" });
     }
-    return res.status(200).json(await getCartDetails(userId));
+    const cart = await Users.findOne(
+      { _id: userId },
+      { projection: { cart: 1 } },
+    );
+
+    return res.status(200).json(cart.cart);
   },
 );
 

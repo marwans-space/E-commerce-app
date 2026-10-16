@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
 export default function authenticate(req, res, next) {
-  // TODO: req.cookies?.token (req.cookies is undefined if cookie-parser isn't registered)
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ error: "Not authenticated" });
   try {

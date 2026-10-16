@@ -5,6 +5,9 @@ import { ProductCard } from "../components/ProductCard";
 import { TestimonialCard } from "../components/TestimonialCard";
 import type { Product, ProductListResponse } from "../types/product";
 import type { Review, ReviewListResponse } from "../types/review";
+
+const API_URL = import.meta.env.VITE_API_URL;
+
 const SHOP_CATEGORIES: string[] = [
   "T-shirt",
   "Hoodie",
@@ -51,9 +54,7 @@ export function Home() {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts(
-          "http://localhost:3434/api/products/featured",
-        );
+        const data = await fetchProducts(API_URL + "/api/products/featured");
         setFeatured(data);
       } catch {
         setFeaturedError("Featured products could not be loaded.");
@@ -63,7 +64,7 @@ export function Home() {
     }
     async function loadReviews() {
       try {
-        const data = await fetchReviews("http://localhost:3434/api/reviews");
+        const data = await fetchReviews(API_URL + "/api/reviews");
         setReviews(data);
       } catch {
         setReviewsError("Customer reviews could not be loaded.");
@@ -92,7 +93,7 @@ export function Home() {
             </p>
             <a
               className="flex min-h-13 w-full items-center justify-center rounded-full border border-black bg-black px-7 text-[15px] font-semibold text-white transition hover:-translate-y-0.5 hover:bg-transparent hover:text-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#555] md:inline-flex md:min-w-47.5 md:w-auto"
-              href="#categories"
+              href="/category/all"
             >
               Shop Now
             </a>

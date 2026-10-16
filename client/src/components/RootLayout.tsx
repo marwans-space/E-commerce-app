@@ -25,7 +25,7 @@ export function RootLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { key } = useLocation();
   const { data: meData } = useQuery(meQueryOptions());
-  const cartCount = getCartCount(meData?.user?.cart);
+  const cartCount = getCartCount(meData?.cart);
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
@@ -332,4 +332,3 @@ export function RootLayout() {
     </div>
   );
 }
-
