@@ -235,7 +235,9 @@ export function Product() {
           Home
         </Link>
         <span aria-hidden="true">/</span>
-        <span className="text-black">{product.name || "Product"}</span>
+        <span className="min-w-0 break-words text-black">
+          {product.name || "Product"}
+        </span>
       </nav>
 
       <section
@@ -283,7 +285,7 @@ export function Product() {
           <p className="mb-2 text-xs font-bold tracking-[0.16em] text-black/50 uppercase">
             {product.category}
           </p>
-          <h1 className="m-0 text-[32px] leading-[1.05] font-extrabold tracking-[-1.5px] md:text-[40px] lg:text-[44px]">
+          <h1 className="m-0 break-words text-[32px] leading-[1.05] font-extrabold tracking-[-1.5px] md:text-[40px] lg:text-[44px]">
             {product.name || "Product"}
           </h1>
 
@@ -574,7 +576,7 @@ export function Product() {
                 <h2 className="m-0 text-xl font-bold tracking-[-0.5px] md:text-2xl">
                   Customer reviews
                 </h2>
-                <div className="flex gap-4">
+                <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {product.reviews.length === 0 ? (
                     <p>No ratings or reviews</p>
                   ) : (
@@ -590,7 +592,7 @@ export function Product() {
       </section>
 
       <section className="mt-14 md:mt-20">
-        <div className="mb-7 flex items-end justify-between gap-4">
+        <div className="mb-7 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <h2 className="m-0 text-[28px] leading-tight font-extrabold tracking-[-1.2px] md:text-[36px]">
             You might also like
           </h2>

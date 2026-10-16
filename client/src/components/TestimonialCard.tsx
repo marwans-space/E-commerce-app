@@ -26,8 +26,8 @@ export function TestimonialCard({ review }: TestimonialCardProps) {
           </svg>
         ))}
       </div>
-      <h3 className="mb-2 text-base font-bold">{review.name}</h3>
-      <blockquote className="m-0 text-sm leading-[1.65] text-black/60">
+      <h3 className="mb-2 break-words text-base font-bold">{review.name}</h3>
+      <blockquote className="m-0 break-words text-sm leading-[1.65] text-black/60">
         “{review.text}”
       </blockquote>
     </article>

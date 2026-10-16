@@ -111,7 +111,7 @@ export function Register() {
             noValidate
             className="flex flex-col gap-2.5"
           >
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 min-[400px]:flex-row">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <input
                   className={`h-12 w-full rounded-xl border bg-white px-4 text-sm outline-none transition-colors placeholder:text-black/50 hover:border-black/35 focus:ring-2 focus:ring-black/10 sm:text-base ${errors.firstName ? "border-red-500 hover:border-red-500" : "border-black/10"}`}

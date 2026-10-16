@@ -208,11 +208,11 @@ export function Profile() {
                     <img
                       src={user.profileImg}
                       alt=""
-                      className="h-32 w-32 shrink-0 rounded-full border border-black/10 object-cover"
+                      className="size-20 shrink-0 rounded-full border border-black/10 object-cover sm:size-32"
                     />
                   ) : (
                     <div
-                      className="grid h-32 w-32 shrink-0 place-items-center rounded-full bg-black text-4xl font-bold text-white"
+                      className="grid size-20 shrink-0 place-items-center rounded-full bg-black text-3xl font-bold text-white sm:size-32 sm:text-4xl"
                       aria-hidden="true"
                     >
                       {initial}
@@ -310,7 +310,7 @@ export function Profile() {
                   <dt className="text-xs font-semibold tracking-[0.08em] text-black/45 uppercase">
                     Full name
                   </dt>
-                  <dd className="m-0 text-sm font-medium">
+                  <dd className="m-0 break-words text-sm font-medium">
                     {user.name || "Not provided"}
                   </dd>
                 </div>
@@ -318,7 +318,7 @@ export function Profile() {
                   <dt className="text-xs font-semibold tracking-[0.08em] text-black/45 uppercase">
                     Delivery address
                   </dt>
-                  <dd className="m-0 text-sm leading-relaxed font-medium">
+                  <dd className="m-0 break-words text-sm leading-relaxed font-medium">
                     {user.address || "Not provided"}
                   </dd>
                 </div>
@@ -326,7 +326,7 @@ export function Profile() {
                   <dt className="text-xs font-semibold tracking-[0.08em] text-black/45 uppercase">
                     Phone number
                   </dt>
-                  <dd className="m-0 text-sm font-medium">
+                  <dd className="m-0 break-words text-sm font-medium">
                     {user.number || "Not provided"}
                   </dd>
                 </div>
