@@ -10,3 +10,9 @@ export type RegisterFormData = {
   password: string;
   confirmPassword: string;
 };
+
+export type ChangePassFormData = {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};

@@ -22,7 +22,7 @@ app.use(express.json());
 app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
 app.use(helmet());
-app.use(morgan());
+app.use(morgan("dev"));
 app.use((req, res, next) => {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
   if (req.get("origin") !== env.CLIENT_URL) {

@@ -96,6 +96,4 @@ router.patch("/profile", authenticate, authorize("user"), async (req, res) => {
   );
   return res.status(200).json({ user: toProfile(user) });
 });
-// TODO: PATCH /profile/password  (current password + new password, same 8..72 byte rules as register)
-
 export default router;

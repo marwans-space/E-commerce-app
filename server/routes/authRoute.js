@@ -1,7 +1,8 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { addUser, getUserByEmail, getUserById } from "../db.js";
+import { ObjectId } from "mongodb";
+import { Users, addUser, getUserByEmail, getUserById } from "../db.js";
 import authenticate from "../middleware/authenticate.js";
 const router = express.Router();
 
@@ -118,5 +119,52 @@ router.post("/register", async (req, res, next) => {
     next(err);
   }
 });
+// Change password
+router.patch("/change-pass", authenticate, async (req, res) => {
+  const { oldPassword, newPassword } = req.body ?? {};
+  if (
+    typeof oldPassword !== "string" ||
+    typeof newPassword !== "string"
+  ) {
+    return res.status(400).json({ error: "Missing or invalid credentials" });
+  }
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ error: "Missing credentials" });
+  }
+  if (newPassword.length < 8 || newPassword.length > 16) {
+    return res
+      .status(400)
+      .json({ error: "Password must be 8-16 characters" });
+  }
+  if (Buffer.byteLength(newPassword) > MAX_PASSWORD_BYTES) {
+    return res
+      .status(400)
+      .json({ error: "Password must be at most 72 bytes" });
+  }
+  if (oldPassword === newPassword) {
+    return res
+      .status(400)
+      .json({ error: "The old and new passwords can't be equal" });
+  }
+  if (!ObjectId.isValid(req.user.id)) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
 
+  const oid = new ObjectId(req.user.id);
+  const user = await Users.findOne({ _id: oid });
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+  const isValid = await bcrypt.compare(oldPassword, user.passwordHash);
+  if (!isValid) {
+    return res.status(400).json({ error: "Invalid credentials" });
+  }
+  const newPasswordHash = await bcrypt.hash(newPassword, 10);
+  await Users.updateOne(
+    { _id: oid },
+    { $set: { passwordHash: newPasswordHash } },
+  );
+  res.clearCookie("token", cookieOptions);
+  return res.status(200).json({ message: "Changed successfully" });
+});
 export default router;
