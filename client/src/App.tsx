@@ -11,10 +11,14 @@ import { Profile } from "./pages/profile";
 import { Register } from "./pages/register";
 import { Wishlist } from "./pages/wishlist";
 import { NotFound } from "./pages/NotFound";
+import { Admin } from "./pages/Admin.tsx";
+import { ChangePass } from "./pages/ChangePass.tsx";
 
 const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
+  { path: "/admin", element: <Admin /> },
+  { path: "/change-password", element: <ChangePass /> },
   {
     path: "/",
     element: <RootLayout />,

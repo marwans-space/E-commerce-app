@@ -3,12 +3,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { addUser, getUserByEmail, getUserById } from "../db.js";
 import authenticate from "../middleware/authenticate.js";
-import authorize from "../middleware/authorize.js";
-
 const router = express.Router();
 
 // TODO(security): rate limit /login and /register (e.g. 5-10 attempts per 15 min per IP, plus per email for login)
-// TODO: use validate(schema) (Zod) for the request bodies below (email format, name length, max lengths)
 
 const MAX_PASSWORD_BYTES = 72; // bcrypt only uses the first 72 bytes
 // Used to keep response time similar when the email doesn't exist
@@ -25,8 +22,6 @@ const cookieOptions = {
   maxAge: 24 * 60 * 60 * 1000,
 };
 
-// TODO: 24h token with no refresh and no way to revoke it. Consider a short access token (15 min) + refresh
-// token, or at least re-check the user in authenticate.js. Make sure JWT_SECRET is long and random.
 const signToken = (user) =>
   jwt.sign(
     { sub: user._id.toString(), role: user.role },
@@ -34,7 +29,6 @@ const signToken = (user) =>
     { expiresIn: "24h" },
   );
 
-// TODO: front-end profile page will also need email and profileImg here (or from GET /profile)
 const publicUser = (user) => ({
   _id: user._id,
   name: user.name,
@@ -84,7 +78,6 @@ router.post("/login", async (req, res) => {
 
 // logout
 router.post("/logout", (req, res) => {
-  // Express 5 ignores maxAge/expires in clearCookie
   res.clearCookie("token", cookieOptions);
   res.sendStatus(204);
 });
@@ -104,7 +97,6 @@ router.post("/register", async (req, res, next) => {
     if (!email.trim() || !name.trim() || !password) {
       return res.status(400).json({ error: "Missing credentials" });
     }
-    // TODO: validate email format and cap email/name length (no check right now beyond "not empty")
     if (password.length < 8) {
       return res
         .status(400)
@@ -134,7 +126,6 @@ router.post("/register", async (req, res, next) => {
 });
 
 // TODO: POST /auth/forgot-password + POST /auth/reset-password (needs an email service, optional for a portfolio)
-// TODO (optional): email verification
 // TODO (optional): password change lives in the profile routes (apiRoutes.js), invalidate old tokens afterwards
 
 export default router;

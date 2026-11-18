@@ -73,7 +73,6 @@ router.post(
       return res.status(400).json({ error: "Maximum quantity per item is 99" });
     }
 
-    // TODO (low priority): bump + push are two writes, two simultaneous requests can create duplicate cart lines.
     const bumped = await Users.updateOne(
       { _id: userId, "cart.productId": product._id },
       { $inc: { "cart.$.quantity": quantity } },

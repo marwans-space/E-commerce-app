@@ -8,6 +8,7 @@ import { RatingStars } from "../components/RatingStars";
 import type { Product as ProductData } from "../types/product";
 import { TestimonialCard } from "../components/TestimonialCard";
 import { ProductCard } from "../components/ProductCard";
+import type { Wishlist } from "../types/wishlist.ts";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -67,6 +68,18 @@ async function addToCart(
   }
   return await res.json();
 }
+async function addToWishlist(url: string, body: string) {
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: body,
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP Error! status: ${res.status}`);
+  }
+  return await res.json();
+}
 const sizes = ["XS", "S", "M", "L", "XL", "2XL"];
 
 function getAvailableStock(
@@ -92,7 +105,6 @@ function formatPrice(price: number) {
 export function Product() {
   const { productId } = useParams();
   const queryClient = useQueryClient();
-
   const [product, setProduct] = useState<ProductData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [productError, setProductError] = useState<
@@ -105,6 +117,7 @@ export function Product() {
   const [activeTab, setActiveTab] = useState("details");
   const [featured, setFeatured] = useState<ProductData[]>([]);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [cartMessage, setCartMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -224,6 +237,37 @@ export function Product() {
       setIsAddingToCart(false);
     }
   }
+  async function handleAddToWishlist() {
+    if (isAddingToWishlist) return;
+    setIsAddingToWishlist(true);
+    setCartMessage(null);
+    const body: Wishlist = {
+      productId: currentProduct._id,
+      name: currentProduct.name,
+      color: activeColor,
+      size: activeSize,
+      img: currentProduct.imgs[0],
+    };
+    try {
+      await addToWishlist(
+        API_URL + "/api/add-to-wishlist",
+        JSON.stringify(body),
+      );
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      setCartMessage({
+        type: "success",
+        text: "Added to wishlist successfully!",
+      });
+    } catch (err) {
+      console.error(err);
+      setCartMessage({
+        type: "error",
+        text: "Could not add this product to your cart. Please try again.",
+      });
+    } finally {
+      setIsAddingToWishlist(false);
+    }
+  }
 
   return (
     <main className="mx-auto min-h-screen w-[calc(100%-36px)] max-w-310 pb-16 pt-6 text-black md:w-[calc(100%-48px)] md:pb-20 md:pt-10 lg:w-[min(1240px,calc(100%-64px))]">
@@ -235,7 +279,7 @@ export function Product() {
           Home
         </Link>
         <span aria-hidden="true">/</span>
-        <span className="min-w-0 break-words text-black">
+        <span className="min-w-0 wrap-break-word text-black">
           {product.name || "Product"}
         </span>
       </nav>
@@ -285,7 +329,7 @@ export function Product() {
           <p className="mb-2 text-xs font-bold tracking-[0.16em] text-black/50 uppercase">
             {product.category}
           </p>
-          <h1 className="m-0 break-words text-[32px] leading-[1.05] font-extrabold tracking-[-1.5px] md:text-[40px] lg:text-[44px]">
+          <h1 className="m-0 wrap-break-word text-[32px] leading-[1.05] font-extrabold tracking-[-1.5px] md:text-[40px] lg:text-[44px]">
             {product.name || "Product"}
           </h1>
 
@@ -414,6 +458,21 @@ export function Product() {
                 +
               </button>
             </div>
+            <button
+              className="min-w-12 cursor-pointer rounded-full px-4 py-3 text-sm font-medium border-[#f0f0f0] border transition-colors bg-white text-black hover:bg-[#f0f0f0] hover:text-black"
+              onClick={handleAddToWishlist}
+              type="button"
+              disabled={isAddingToWishlist}
+            >
+              <svg
+                className="size-5.25 stroke-current [stroke-linecap:round] [stroke-linejoin:round] stroke-[1.7] md:size-5.75"
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path d="M20.8 8.7c0 4.2-8.8 10-8.8 10s-8.8-5.8-8.8-10a4.7 4.7 0 0 1 8.8-2.3 4.7 4.7 0 0 1 8.8 2.3Z" />
+              </svg>
+            </button>
             <button
               className="h-13 flex-1 cursor-pointer rounded-full bg-black px-6 text-sm font-semibold text-white transition-colors hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isAddingToCart || selectedQuantity === 0}

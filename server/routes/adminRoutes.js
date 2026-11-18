@@ -25,10 +25,71 @@ router.get("/admin/products", async (req, res) => {
 // POST
 // TODO: admin add product: validate name, description, category, price (> 0, 2 decimals), instructions,
 // img, color, size, isListed, isFeatured. Never trust _id/reviews from the body.
-
+router.post("/admin/products", async (req, res) => {
+  const {
+    name,
+    imgs,
+    isListed,
+    isFeatured,
+    description,
+    category,
+    price,
+    instructions,
+    color,
+    size,
+    stock,
+  } = req.body;
+  if (
+    !name ||
+    !imgs ||
+    !description ||
+    !category ||
+    !price ||
+    !instructions ||
+    !color ||
+    !size ||
+    !stock
+  ) {
+    return res.status(400).json({ error: "Missing credentials" });
+  }
+});
 // PATCH
 // TODO: admin edit product: whitelist fields. Also used to re-list a soft-deleted product (isListed: true).
-
+router.patch("/admin/products/:id", async (req, res) => {
+  const { id } = req.params;
+  if (!isObjectId(id)) {
+    return res.status(400).json({ error: "Invalid product id" });
+  }
+  const pid = new ObjectId(id);
+  const result = await Products.updateOne(
+    { _id: pid },
+    {
+      $set: { isListed: true },
+    },
+  );
+  if (result.matchedCount === 0) {
+    return res.status(400).json({ error: "Invalid product id" });
+  }
+  return res.status(204).json({ message: "Updated successfully" });
+});
+// set featured
+router.patch("/admin/products/:id/featured", async (req, res) => {
+  const { id } = req.params;
+  if (!isObjectId(id)) {
+    return res.status(400).json({ error: "Invalid product id" });
+  }
+  const pid = new ObjectId(id);
+  const result = await Products.updateOne(
+    { _id: pid },
+    {
+      $set: { isFeatured: true },
+    },
+  );
+  if (result.matchedCount === 0) {
+    return res.status(400).json({ error: "Invalid product id" });
+  }
+  return res.status(204).json({ message: "Updated successfully" });
+});
 // DELETE (soft delete: unlist the product, keep order history intact)
 router.delete("/admin/products/:id", async (req, res) => {
   const { id } = req.params;
@@ -47,7 +108,12 @@ router.delete("/admin/products/:id", async (req, res) => {
   // keep unlisted products out of existing carts and wishlists
   await Users.updateMany(
     {},
-    { $pull: { cart: { productId: pid }, wishlist: pid } },
+    {
+      $pull: {
+        cart: { productId: pid },
+        wishlist: { $or: [{ productId: pid }, { productId: pid.toString() }] },
+      },
+    },
   );
   return res.status(204).send();
 });

@@ -51,9 +51,6 @@ router.get(
   },
 );
 
-// POST
-// TODO: POST /profile/image (upload) if you add file uploads, otherwise accept an image URL
-
 // PATCH (only name, address and number can be changed here)
 router.patch("/profile", authenticate, authorize("user"), async (req, res) => {
   const { name, address, number } = req.body ?? {};
@@ -100,10 +97,5 @@ router.patch("/profile", authenticate, authorize("user"), async (req, res) => {
   return res.status(200).json({ user: toProfile(user) });
 });
 // TODO: PATCH /profile/password  (current password + new password, same 8..72 byte rules as register)
-// TODO: PATCH /profile/image  (profile picture)
-
-// DELETE
-// TODO: DELETE /profile  (user deletes own account: re-enter password; decide hard delete vs anonymize,
-// orders keep userId/userName and can't be deleted)
 
 export default router;

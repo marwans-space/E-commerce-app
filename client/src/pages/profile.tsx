@@ -280,14 +280,9 @@ export function Profile() {
               </p>
               <div className="mb-5 flex flex-wrap gap-2">
                 <button
-                  className="inline-flex min-h-10 hover:cursor-pointer items-center justify-center rounded-full bg-black px-5 text-sm font-medium text-white transition-colors hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
-                  type="button"
-                >
-                  Edit Profile
-                </button>
-                <button
                   className="inline-flex min-h-10 hover:cursor-pointer items-center justify-center rounded-full border border-black/15 px-5 text-sm font-medium text-black transition-colors hover:border-black hover:bg-black/3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
                   type="button"
+                  onClick={() => navigate("/change-password")}
                 >
                   Change Password
                 </button>
@@ -310,7 +305,7 @@ export function Profile() {
                   <dt className="text-xs font-semibold tracking-[0.08em] text-black/45 uppercase">
                     Full name
                   </dt>
-                  <dd className="m-0 break-words text-sm font-medium">
+                  <dd className="m-0 wrap-break-word text-sm font-medium">
                     {user.name || "Not provided"}
                   </dd>
                 </div>
@@ -318,7 +313,7 @@ export function Profile() {
                   <dt className="text-xs font-semibold tracking-[0.08em] text-black/45 uppercase">
                     Delivery address
                   </dt>
-                  <dd className="m-0 break-words text-sm leading-relaxed font-medium">
+                  <dd className="m-0 wrap-break-word text-sm leading-relaxed font-medium">
                     {user.address || "Not provided"}
                   </dd>
                 </div>
@@ -326,7 +321,7 @@ export function Profile() {
                   <dt className="text-xs font-semibold tracking-[0.08em] text-black/45 uppercase">
                     Phone number
                   </dt>
-                  <dd className="m-0 break-words text-sm font-medium">
+                  <dd className="m-0 wrap-break-word text-sm font-medium">
                     {user.number || "Not provided"}
                   </dd>
                 </div>

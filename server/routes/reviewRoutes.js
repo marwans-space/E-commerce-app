@@ -18,12 +18,5 @@ router.get("/reviews", async (req, res) => {
 // POST
 // TODO: POST /products/:id/reviews { text, rating 0-5 }: must write to BOTH the Reviews collection and
 // product.reviews (embedded, no _id). userId/username come from the token/DB, never the body.
-// Decide: only buyers can review? one review per user per product? (needs a unique index)
-
-// PATCH
-// TODO (optional): edit own review. Must update both places.
-
-// DELETE
-// (none) reviews are not deletable
 
 export default router;

@@ -1,18 +1,6 @@
 import express from "express";
-import isObjectId from "../utils/objectId.js";
 import { ObjectId } from "mongodb";
-import {
-  Users,
-  Products,
-  Orders,
-  Reviews,
-  getProductById,
-  getUserById,
-  addOrder,
-  getProducts,
-  getOrders,
-  getOrderById,
-} from "../db.js";
+import { Users, Products, addOrder, getOrderById } from "../db.js";
 import authenticate from "../middleware/authenticate.js";
 import authorize from "../middleware/authorize.js";
 
@@ -29,16 +17,11 @@ router.get("/orders/me", authenticate, authorize("user"), async (req, res) => {
   }
   res.status(200).json(orders);
 });
-// TODO: GET /orders/me/:id  (one order, 404 if it belongs to someone else)
 
 // POST
 // TODO: guest checkout (no login, order with userId: null, name + number + address + items from the request,
 // prices still taken from the DB). Needs a separate route or optional authentication.
-// TODO: validate userNumber (phone format, length) and shippingAddress (trim, max length) with Zod.
-// TODO: the order and the cart clearing are two separate writes. If the second fails, a retry creates a
-// duplicate order. Use a transaction or an idempotency key.
 // TODO: no stock check, decide whether inventory is in scope.
-// TODO: return an object { order, user } instead of an array [order, user].
 router.post("/add-order", authenticate, authorize("user"), async (req, res) => {
   const { userNumber, shippingAddress } = req.body ?? {};
   if (
@@ -75,19 +58,18 @@ router.post("/add-order", authenticate, authorize("user"), async (req, res) => {
 
   const priceById = new Map(products.map((p) => [p._id.toString(), p.price]));
 
-  // TODO: round the total to 2 decimals (14.99 * 3 gives float artifacts)
   const totalPrice =
     user.cart.reduce(
       (sum, item) =>
         sum + priceById.get(item.productId.toString()) * item.quantity,
       0,
     ) + 20;
+  totalPrice = Math.round(totalPrice * 100) / 100;
   const order = {
     userId,
     userName: user.name,
     userNumber,
     shippingAddress,
-    // TODO: snapshot name, price, quantity, img per item instead of the raw cart
     items: user.cart,
     totalPrice,
   };
@@ -100,12 +82,7 @@ router.post("/add-order", authenticate, authorize("user"), async (req, res) => {
     { _id: userId },
     { projection: { name: 1, number: 1, address: 1, cart: 1 } },
   );
-  return res.status(200).json([placedOrder, updatedUser]);
+  return res.status(200).json({ order: placedOrder, user: updatedUser });
 });
 
-// PATCH
-// TODO: PATCH /orders/me/:id/cancel  (user can cancel only while status is still "In Process")
-
-// DELETE
-// (none) orders are never deleted, cancelled orders stay as records
 export default router;

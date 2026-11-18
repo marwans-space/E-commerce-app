@@ -16,19 +16,31 @@ async function getWishlistDetails(userId) {
   );
   if (!user) return null;
 
-  const ids = user.wishlist ?? [];
+  const entries = user.wishlist ?? [];
+  const ids = entries.map((entry) => {
+    const id =
+      typeof entry === "object" && entry?.productId ? entry.productId : entry;
+    return id instanceof ObjectId
+      ? id
+      : ObjectId.isValid(id)
+        ? new ObjectId(id)
+        : id;
+  });
   const products = await Products.find({ _id: { $in: ids } }).toArray();
   const productById = new Map(products.map((p) => [p._id.toString(), p]));
 
-  const wishlist = ids.map((id) => {
+  const wishlist = entries.map((entry, index) => {
+    const id = ids[index];
+    const embedded =
+      typeof entry === "object" && !ObjectId.isPrototypeOf(entry) ? entry : {};
     const product = productById.get(id.toString());
     return {
-      productId: id,
+      productId: id.toString(),
       name: product?.name ?? null,
       price: product?.price ?? null,
-      img: product?.img ?? null,
-      color: product?.color ?? null,
-      size: product?.size ?? null,
+      img: product?.img ?? embedded.img ?? null,
+      color: product?.color ?? embedded.color ?? null,
+      size: product?.size ?? embedded.size ?? null,
       category: product?.category ?? null,
       isAvailable: Boolean(product?.isListed),
     };
@@ -57,7 +69,7 @@ router.patch(
   authorize("user"),
   async (req, res) => {
     // get the the item from req body
-    const { productId } = req.body ?? {};
+    const { productId, color, size, name, img } = req.body ?? {};
     // check for errors
     const product = await getProductById(productId);
     if (!product || !product.isListed) {
@@ -69,20 +81,19 @@ router.patch(
     // update user wishlist
     await Users.updateOne(
       { _id: userId },
-      { $addToSet: { wishlist: product._id } },
+      { $addToSet: { wishlist: { productId, color, size, name, img } } },
     );
     // 200
     return res.status(200).json(await getWishlistDetails(userId));
   },
 );
-
 // DELETE
 router.delete(
   "/wishlist/:productId",
   authenticate,
   authorize("user"),
   async (req, res) => {
-    const { productId } = req.params;
+    const productId = req.params.productId;
     if (!isObjectId(productId)) {
       return res.status(400).json({ error: "Invalid product id" });
     }
@@ -90,10 +101,36 @@ router.delete(
     const pid = new ObjectId(productId);
 
     const result = await Users.updateOne(
-      { _id: userId, wishlist: pid },
-      { $pull: { wishlist: pid } },
+      { _id: userId },
+      [
+        {
+          $set: {
+            wishlist: {
+              $filter: {
+                input: { $ifNull: ["$wishlist", []] },
+                as: "item",
+                cond: {
+                  $not: [
+                    {
+                      $or: [
+                        { $eq: ["$$item", pid] },
+                        { $eq: ["$$item", productId] },
+                        { $eq: ["$$item.productId", pid] },
+                        { $eq: ["$$item.productId", productId] },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ],
     );
     if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (result.modifiedCount === 0) {
       return res.status(404).json({ error: "Item not in wishlist" });
     }
     return res.status(200).json(await getWishlistDetails(userId));
