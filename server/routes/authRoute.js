@@ -5,15 +5,9 @@ import { addUser, getUserByEmail, getUserById } from "../db.js";
 import authenticate from "../middleware/authenticate.js";
 const router = express.Router();
 
-// TODO(security): rate limit /login and /register (e.g. 5-10 attempts per 15 min per IP, plus per email for login)
-
 const MAX_PASSWORD_BYTES = 72; // bcrypt only uses the first 72 bytes
-// Used to keep response time similar when the email doesn't exist
 const DUMMY_HASH = bcrypt.hashSync("dummy-password", 10);
 
-// TODO(security): when the front-end is on a different domain than the API, sameSite "lax" cookies are not sent
-// on cross-site fetch requests. You'll need sameSite: "none" + secure: true, plus CORS credentials (index.js)
-// and CSRF protection (Origin check or CSRF token). Deferred item, but it will break login in production.
 const isProd = process.env.NODE_ENV === "production";
 const cookieOptions = {
   httpOnly: true,
@@ -124,8 +118,5 @@ router.post("/register", async (req, res, next) => {
     next(err);
   }
 });
-
-// TODO: POST /auth/forgot-password + POST /auth/reset-password (needs an email service, optional for a portfolio)
-// TODO (optional): password change lives in the profile routes (apiRoutes.js), invalidate old tokens afterwards
 
 export default router;

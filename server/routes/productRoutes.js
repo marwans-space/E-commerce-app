@@ -32,6 +32,4 @@ router.get("/products/:id", async (req, res) => {
   res.status(200).json(product);
 });
 
-// TODO (later): search (text index) and price filters/sorting
-
 export default router;

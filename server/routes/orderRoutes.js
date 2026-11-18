@@ -19,9 +19,6 @@ router.get("/orders/me", authenticate, authorize("user"), async (req, res) => {
 });
 
 // POST
-// TODO: guest checkout (no login, order with userId: null, name + number + address + items from the request,
-// prices still taken from the DB). Needs a separate route or optional authentication.
-// TODO: no stock check, decide whether inventory is in scope.
 router.post("/add-order", authenticate, authorize("user"), async (req, res) => {
   const { userNumber, shippingAddress } = req.body ?? {};
   if (

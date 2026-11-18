@@ -1,27 +1,7 @@
-/*
- * ======================================================================
- * BACKEND TODO OVERVIEW
- * Tags used in every file:
- *   BUG:             broken or wrong right now, fix first
- *   TODO(security):  must be done before deploying
- *   TODO:            missing feature / improvement
- *
- * NEW FILES TO CREATE
- *   config/env.js              validate required env vars at startup (PORT, MONGO_URI, JWT_SECRET, CLIENT_URL, NODE_ENV)
- *   middleware/validate.js     validate(schema) middleware using Zod (share schemas with the front-end)
- *   middleware/errorHandler.js central error handler + 404 handler
- *   middleware/rateLimiter.js  express-rate-limit (strict for /auth/login and /auth/register)
- *   middleware/upload.js       multer config for profile image / product image (or start with URL-only images)
- *   utils/objectId.js          shared isObjectId() (currently duplicated idea in apiRoutes.js + db.js)
- *   schemas/*.js               Zod schemas: auth, product, order, review, profile
- *   scripts/seed.js            seed data (no id fields, addresses as plain strings)
- *   tests/                     supertest: auth, cart, checkout, admin authorization
- *   .env.example, README.md    document env vars and endpoints
- * ======================================================================
- */
 import "dotenv/config";
 import env from "./config/env.js";
 import express from "express";
+import helmet from "helmet";
 import cors from "cors";
 import { connectDB } from "./db.js";
 import authRoutes from "./routes/authRoute.js";
@@ -33,24 +13,16 @@ import cartRoutes from "./routes/cartRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 import cookieParser from "cookie-parser";
-
-// TODO(security): validate env vars at startup and exit if any are missing (config/env.js)
+import morgan from "morgan";
 
 const app = express();
 const port = env.PORT ?? 3000;
 
-// TODO(security): app.set("trust proxy", 1) when deployed behind a proxy (Render, Railway, Nginx),
-// otherwise secure cookies and rate limiting by IP won't work correctly.
-// TODO(security): app.use(helmet()) (security headers)
-// TODO: request logging (morgan)
-// TODO: compression()
-
-// TODO(security): limit body size: express.json({ limit: "10kb" })
 app.use(express.json());
-// TODO(security): restrict CORS: cors({ origin: process.env.CLIENT_URL, credentials: true }).
-// Open cors() will not send cookies cross-origin, and allows any site to call the API.
 app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
+app.use(helmet());
+app.use(morgan());
 app.use((req, res, next) => {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
   if (req.get("origin") !== env.CLIENT_URL) {
@@ -58,11 +30,11 @@ app.use((req, res, next) => {
   }
   next();
 });
-// TODO(security): rate limiter on /auth (login/register) and a looser global limiter on /api
-// TODO(security): if the front-end is on a different domain, cookies need sameSite: "none" + secure
-// (see authRoute.js) and then you need CSRF protection (check Origin header or CSRF token).
 
-// TODO: GET /health endpoint (db ping) for the hosting platform
+// Routes
+app.get("/health", (req, res) =>
+  res.status(200).send("API working and healthy!"),
+);
 app.use("/auth", authRoutes);
 app.use(
   "/api",
@@ -83,11 +55,10 @@ app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   res.status(err.status ?? 500).json({ error: "Internal server error" });
 });
-
+// Listener and DB
 try {
   await connectDB();
   app.listen(port, () => console.log(`🚀 Server is running on port ${port}`));
-  // TODO: graceful shutdown (SIGTERM/SIGINT: close server and client.close())
 } catch (error) {
   console.error("❌ Database connection error:", error);
   process.exit(1);

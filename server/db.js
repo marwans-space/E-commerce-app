@@ -1,10 +1,7 @@
 import { MongoClient, ObjectId } from "mongodb";
 import env from "./config/env.js";
-import isObjectId from "./utils/objectId.js";
 
-// TODO(security): fail fast if MONGO_URI is missing (see the dotenv import-order note in index.js)
 const client = new MongoClient(env.MONGO_URI);
-// TODO: db name is "store" here but "shop" elsewhere (deferred mismatch), pick one and use an env var
 const db = client.db(env.DB_NAME);
 
 export const Users = db.collection("users");
@@ -43,7 +40,6 @@ export async function connectDB() {
   console.log("✅ Database connected successfully");
 }
 
-// TODO: validate/trim/length-cap data at the route level (Zod), db helpers assume clean input
 async function nextOrderNo() {
   const counter = await Counters.findOneAndUpdate(
     { _id: "orderNo" },
@@ -53,7 +49,6 @@ async function nextOrderNo() {
   return counter.seq; // driver v5: counter.value.seq
 }
 export async function getUsers() {
-  // TODO: pagination (skip/limit) for admin user list
   return await Users.find({}, { projection: { passwordHash: 0 } }).toArray();
 }
 
@@ -62,30 +57,16 @@ export async function getUserByEmail(email) {
 }
 
 export async function getProducts() {
-  // TODO: admin list: pagination + filters (category, isListed)
-  // TODO: new getPublicProducts({ category, search, page, limit, sort }) that only returns isListed: true
-  // TODO: new getFeaturedProducts() (isFeatured && isListed) for the home page
   return await Products.find().toArray();
 }
 
 export async function getOrders() {
-  // TODO: pagination + filter by status, sort by createdAt desc
-  // TODO: new getOrdersByUserId(userId) for "my orders"
-  // TODO: new getOrderById(id)
   return await Orders.find().toArray();
 }
 
 export async function getReviews() {
-  // TODO: limit/sort (latest or best rated) for the home page section
   return await Reviews.find().toArray();
 }
-
-// TODO: missing helpers
-//   addProduct(data), updateProduct(id, data)
-//   updateOrderStatus(id, status)  (Cancelled orders are never deleted and should not be editable afterwards)
-//   addReview({ userId, username, productId, text, rating }) -> must write to BOTH Reviews and product.reviews
-//   updateUser(id, fields), changePassword(id, hash), deleteUser(id) (decide: hard delete vs anonymize,
-//   orders keep userId/userName and can't be deleted, so they would point to a missing user)
 
 export async function addUser({ name, email, passwordHash }) {
   const user = {
@@ -133,18 +114,12 @@ export async function addOrder({
     userName,
     userNumber,
     shippingAddress,
-    // TODO: snapshot each item { productId, name, price, quantity, img } so order history
-    // survives price changes and unlisted products (right now only ids + quantities are stored)
     items,
-    // TODO: prices are decimals (14.99): round to 2 decimals (or store cents) to avoid float artifacts
     totalPrice,
-    // TODO: define the allowed statuses in one place (e.g. "In Process", "Shipped", "Delivered", "Cancelled")
     status: "In Process",
     createdAt: new Date(),
     orderNo: (await nextOrderNo()) ?? 1,
   };
-  // TODO: placing the order and clearing the cart are two separate writes (see apiRoutes.js /add-order),
-  // use a transaction (needs a replica set, Atlas has one) or make it idempotent.
   const { insertedId } = await Orders.insertOne(order);
   return {
     ...order,
@@ -158,6 +133,3 @@ export async function getOrderById(id) {
     { sort: { createdAt: -1 } },
   ).toArray();
 }
-
-// TODO: add the optional stock/inventory decision (no stock field exists, nothing stops over-ordering)
-// TODO: graceful close: export a closeDB() that calls client.close()
