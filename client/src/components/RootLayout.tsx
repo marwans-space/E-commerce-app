@@ -1,6 +1,6 @@
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, Outlet, useLocation } from "react-router";
+import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import meQueryOptions from "../queries/query";
 
 function getCartCount(cart: unknown): number {
@@ -23,9 +23,17 @@ function getCartCount(cart: unknown): number {
 export function RootLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { key } = useLocation();
+  const navigate = useNavigate();
   const { data: meData } = useQuery(meQueryOptions());
   const cartCount = getCartCount(meData?.cart);
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    navigate(query ? `/category/all?q=${encodeURIComponent(query)}` : "/category/all");
+  }
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
@@ -78,6 +86,7 @@ export function RootLayout() {
             className={`${isSearchOpen ? "flex" : "hidden"} order-6 h-12 w-full flex-1 items-center gap-3 rounded-full bg-[#f0f0f0] px-4 md:order-0 md:flex md:max-w-90`}
             id="site-search"
             role="search"
+            onSubmit={submitSearch}
           >
             <svg
               aria-hidden="true"
@@ -92,6 +101,8 @@ export function RootLayout() {
               className="w-full min-w-0 bg-transparent text-sm text-black outline-none placeholder:text-[#777]"
               aria-label="Search products"
               placeholder="Search for products..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
           </form>
 

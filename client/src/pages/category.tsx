@@ -1,6 +1,6 @@
 import * as Tabs from "@radix-ui/react-tabs";
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import type { Product } from "../types/product";
 import { ProductCard } from "../components/ProductCard";
 
@@ -34,7 +34,9 @@ export function Category() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { categorySlug } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const searchQuery = (searchParams.get("q") ?? "").trim();
   const activeCategory =
     categoryTabs.find((category) => category.value === categorySlug)?.value ??
     "all";
@@ -47,8 +49,14 @@ export function Category() {
   }
   useEffect(() => {
     async function loadProducts() {
+      setIsLoading(true);
+      setError(null);
       try {
-        const data = await fetchProducts(API_URL + "/api/products");
+        const params = new URLSearchParams();
+        if (searchQuery) params.set("q", searchQuery);
+        if (activeCategory !== "all") params.set("category", activeCategory);
+        const url = `${API_URL}/api/products${params.size ? `?${params}` : ""}`;
+        const data = await fetchProducts(url);
         setProducts(data);
       } catch {
         setError("Products could not be loaded. Please try again later.");
@@ -57,7 +65,7 @@ export function Category() {
       }
     }
     loadProducts();
-  }, []);
+  }, [activeCategory, searchQuery]);
 
   return (
     <main className="mx-auto min-h-[45vh] w-[calc(100%-36px)] max-w-310 pb-16 pt-6 text-black md:w-[calc(100%-48px)] md:pb-20 md:pt-10 lg:w-[min(1240px,calc(100%-64px))]">
@@ -73,12 +81,29 @@ export function Category() {
       </nav>
 
       <h1 className="mb-6 text-[32px] leading-tight font-extrabold tracking-[-1.5px] md:mb-8 md:text-[40px]">
-        {activeCategory === "all" ? "ALL PRODUCTS" : title.toUpperCase()}
+        {searchQuery
+          ? `SEARCH: ${searchQuery.toUpperCase()}`
+          : activeCategory === "all"
+            ? "ALL PRODUCTS"
+            : title.toUpperCase()}
       </h1>
+      {searchQuery && (
+        <button
+          type="button"
+          className="mb-6 rounded-full border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:border-black"
+          onClick={() => setSearchParams({})}
+        >
+          Clear search
+        </button>
+      )}
 
       <Tabs.Root
         value={activeCategory}
-        onValueChange={(value) => navigate(`/category/${value}`)}
+        onValueChange={(value) =>
+          navigate(
+            `/category/${value}${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ""}`,
+          )
+        }
       >
         <Tabs.List
           aria-label="Filter products by category"

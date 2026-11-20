@@ -9,10 +9,8 @@ import {
 import authenticate from "../middleware/authenticate.js";
 import authorize from "../middleware/authorize.js";
 
-// Mounted at /api/admin (see apiRoutes.js), so the paths below are /api/admin/products etc.
 const router = express.Router();
 
-// every route in this file is admin-only
 router.use(authenticate, authorize("admin"));
 
 router.get("/admin/dashboard", async (req, res) => {
@@ -31,10 +29,6 @@ router.get("/admin/dashboard", async (req, res) => {
     recentOrders,
   });
 });
-
-/* ======================================================================
-   admin/products
-   ====================================================================== */
 
 router.get("/admin/products", async (req, res) => {
   const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
@@ -202,7 +196,6 @@ router.patch("/admin/products/:id", async (req, res) => {
   }
   return res.status(200).json({ message: "Updated successfully" });
 });
-// set featured
 router.patch("/admin/products/:id/featured", async (req, res) => {
   const { id } = req.params;
   if (!isObjectId(id)) {
@@ -247,10 +240,6 @@ router.delete("/admin/products/:id", async (req, res) => {
   );
   return res.status(204).send();
 });
-
-/* ======================================================================
-   admin/orders
-   ====================================================================== */
 
 router.get("/admin/orders", async (req, res) => {
   const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
@@ -302,25 +291,5 @@ router.patch("/admin/orders/:id", async (req, res) => {
   }
   return res.status(200).json({ message: "Order status updated successfully" });
 });
-
-// DELETE
-// (none) orders are never deleted
-
-/* ======================================================================
-   admin/users
-   ====================================================================== */
-
-// GET
-// TODO: GET /users (getUsers() already exists in db.js, add pagination), GET /users/:id
-
-// POST
-// (none)
-
-// PATCH
-// TODO (optional): change a user's role. Only admins; don't allow removing the last admin.
-
-// DELETE
-// TODO: DELETE /users/:id. Decide hard delete vs anonymize. Orders keep userId/userName and can't be deleted,
-// reviews keep userId/username. An admin shouldn't be able to delete themselves.
 
 export default router;

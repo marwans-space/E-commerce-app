@@ -48,24 +48,8 @@ async function nextOrderNo() {
   );
   return counter.seq; // driver v5: counter.value.seq
 }
-export async function getUsers() {
-  return await Users.find({}, { projection: { passwordHash: 0 } }).toArray();
-}
-
 export async function getUserByEmail(email) {
   return await Users.findOne({ email });
-}
-
-export async function getProducts() {
-  return await Products.find().toArray();
-}
-
-export async function getOrders() {
-  return await Orders.find().toArray();
-}
-
-export async function getReviews() {
-  return await Reviews.find().toArray();
 }
 
 export async function addUser({ name, email, passwordHash }) {
@@ -90,7 +74,6 @@ export async function addUser({ name, email, passwordHash }) {
 }
 
 export async function getProductById(id) {
-  // TODO: ObjectId.isValid() also accepts any 12-character string, use a strict 24-hex check (utils/objectId.js)
   if (typeof id !== "string" || !ObjectId.isValid(id)) return null;
   return await Products.findOne({ _id: new ObjectId(id) });
 }

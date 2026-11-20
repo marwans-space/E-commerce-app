@@ -10,7 +10,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// ======= Cart =======
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -58,7 +57,6 @@ async function removeCartItem(url: string): Promise<void> {
   }
   await res.json();
 }
-// ======= Order ========
 const orderSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(100),
   shippingAddress: z

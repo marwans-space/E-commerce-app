@@ -36,14 +36,11 @@ const publicUser = (user) => ({
 });
 
 const normalizeEmail = (email) => email.trim().toLowerCase();
-// /me
 router.get("/me", authenticate, async (req, res) => {
   const user = await getUserById(req.user.id);
   if (!user) return res.status(401).json({ error: "User no longer exists" });
   return res.status(200).json({ user: publicUser(user) });
 });
-// login
-
 router.post("/login", async (req, res) => {
   const { email, password } = req.body ?? {};
 
@@ -71,13 +68,11 @@ router.post("/login", async (req, res) => {
   return res.status(200).json({ user: publicUser(user) });
 });
 
-// logout
 router.post("/logout", (req, res) => {
   res.clearCookie("token", cookieOptions);
   res.sendStatus(204);
 });
 
-// register
 router.post("/register", async (req, res, next) => {
   try {
     const { email, password, name } = req.body ?? {};
@@ -119,7 +114,6 @@ router.post("/register", async (req, res, next) => {
     next(err);
   }
 });
-// Change password
 router.patch("/change-pass", authenticate, async (req, res) => {
   const { oldPassword, newPassword } = req.body ?? {};
   if (

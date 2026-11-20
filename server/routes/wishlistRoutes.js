@@ -7,8 +7,6 @@ import authorize from "../middleware/authorize.js";
 
 const router = express.Router();
 
-// Wishlist with product details. Every wishlist route returns this shape:
-// { wishlist: [{ productId, name, price, img, color, size, category, isAvailable }] }
 async function getWishlistDetails(userId) {
   const user = await Users.findOne(
     { _id: userId },
@@ -48,46 +46,31 @@ async function getWishlistDetails(userId) {
   return { wishlist };
 }
 
-/* ======================================================================
-   client/wishlist
-   ====================================================================== */
-
-// GET
 router.get("/wishlist", authenticate, authorize("user"), async (req, res) => {
   const details = await getWishlistDetails(new ObjectId(req.user.id));
   if (!details) return res.status(404).json({ error: "User not found" });
   return res.status(200).json(details);
 });
 
-// POST
-// (none)
-
-// PATCH
 router.patch(
   "/add-to-wishlist",
   authenticate,
   authorize("user"),
   async (req, res) => {
-    // get the the item from req body
     const { productId, color, size, name, img } = req.body ?? {};
-    // check for errors
     const product = await getProductById(productId);
     if (!product || !product.isListed) {
       return res.status(404).json({ error: "Product not found" });
     }
-    // get user using id
     const userId = new ObjectId(req.user.id);
 
-    // update user wishlist
     await Users.updateOne(
       { _id: userId },
       { $addToSet: { wishlist: { productId, color, size, name, img } } },
     );
-    // 200
     return res.status(200).json(await getWishlistDetails(userId));
   },
 );
-// DELETE
 router.delete(
   "/wishlist/:productId",
   authenticate,

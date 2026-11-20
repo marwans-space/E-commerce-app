@@ -23,11 +23,6 @@ const PROFILE_PROJECTION = {
   profileImg: 1,
 };
 
-/* ======================================================================
-   client/profile
-   ====================================================================== */
-
-// GET
 router.get("/profile", authenticate, authorize("user"), async (req, res) => {
   const user = await Users.findOne(
     { _id: new ObjectId(req.user.id) },
@@ -37,7 +32,6 @@ router.get("/profile", authenticate, authorize("user"), async (req, res) => {
   return res.status(200).json({ user: toProfile(user) });
 });
 
-// GET (the user's own orders, newest first)
 router.get(
   "/profile/orders",
   authenticate,
@@ -51,7 +45,6 @@ router.get(
   },
 );
 
-// PATCH (only name, address and number can be changed here)
 router.patch("/profile", authenticate, authorize("user"), async (req, res) => {
   const { name, address, number } = req.body ?? {};
   const updates = {};

@@ -31,7 +31,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
 app.get("/health", (req, res) =>
   res.status(200).send("API working and healthy!"),
 );
@@ -56,7 +55,6 @@ app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   res.status(err.status ?? 500).json({ error: "Internal server error" });
 });
-// Listener and DB
 try {
   await connectDB();
   app.listen(port, () => console.log(`🚀 Server is running on port ${port}`));

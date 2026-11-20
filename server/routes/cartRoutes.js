@@ -7,16 +7,6 @@ import authorize from "../middleware/authorize.js";
 
 const router = express.Router();
 
-const round2 = (n) => Math.round(n * 100) / 100;
-
-// Builds the cart the front-end can display: each line has the product details,
-// the line total, and whether the product can still be bought. Every cart route returns this shape.
-
-/* ======================================================================
-   client/cart
-   ====================================================================== */
-
-// GET
 router.get("/cart", authenticate, authorize("user"), async (req, res) => {
   const user = await getUserById(req.user.id);
   if (!user) {
@@ -41,13 +31,11 @@ router.get("/cart", authenticate, authorize("user"), async (req, res) => {
   return res.status(200).json(cart);
 });
 
-// POST
 router.post(
   "/add-to-cart",
   authenticate,
   authorize("user"),
   async (req, res) => {
-    // get the cart items from the req body
     const { productId, quantity = 1, color, size } = req.body ?? {};
 
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
@@ -55,15 +43,12 @@ router.post(
         .status(400)
         .json({ error: "Quantity must be an integer from 1 to 99" });
     }
-    // check for errors
     const product = await getProductById(productId);
     if (!product || !product.isListed) {
       return res.status(404).json({ error: "Product not found" });
     }
-    // get user using id
     const userId = new ObjectId(req.user.id);
 
-    // the cart total for one item can't go over 99
     const existing = await Users.findOne(
       { _id: userId, "cart.productId": product._id },
       { projection: { "cart.$": 1 } },
@@ -83,14 +68,12 @@ router.post(
         { $push: { cart: { productId: product._id, quantity, color, size } } },
       );
     }
-    // 200
     return res
       .status(200)
       .json(await Users.findOne({ _id: userId }, { projection: { cart: 1 } }));
   },
 );
 
-// PATCH (set the quantity of one item, not add to it)
 router.patch(
   "/cart/:productId",
   authenticate,
@@ -123,7 +106,6 @@ router.patch(
   },
 );
 
-// DELETE (one item)
 router.delete(
   "/cart/:productId",
   authenticate,
@@ -152,7 +134,6 @@ router.delete(
   },
 );
 
-// DELETE (clear cart)
 router.delete("/cart", authenticate, authorize("user"), async (req, res) => {
   const userId = new ObjectId(req.user.id);
   await Users.updateOne({ _id: userId }, { $set: { cart: [] } });

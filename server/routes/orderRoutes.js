@@ -5,11 +5,6 @@ import authenticate from "../middleware/authenticate.js";
 import authorize from "../middleware/authorize.js";
 
 const router = express.Router();
-/* ======================================================================
-   client/checkout + client/orders
-   ====================================================================== */
-
-// GET
 router.get("/orders/me", authenticate, authorize("user"), async (req, res) => {
   const orders = await getOrderById(req.user.id);
   if (!orders) {
@@ -18,7 +13,6 @@ router.get("/orders/me", authenticate, authorize("user"), async (req, res) => {
   res.status(200).json(orders);
 });
 
-// POST
 router.post("/add-order", authenticate, authorize("user"), async (req, res) => {
   const { userNumber, shippingAddress } = req.body ?? {};
   if (
