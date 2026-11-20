@@ -49,7 +49,7 @@ router.post("/add-order", authenticate, authorize("user"), async (req, res) => {
 
   const priceById = new Map(products.map((p) => [p._id.toString(), p.price]));
 
-  const totalPrice =
+  let totalPrice =
     user.cart.reduce(
       (sum, item) =>
         sum + priceById.get(item.productId.toString()) * item.quantity,
