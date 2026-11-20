@@ -4,7 +4,7 @@ A full-stack fashion storefront for browsing products, managing a shopping cart 
 
 ## Features
 
-- Browse featured products and filter the catalog by category
+- Browse featured products, search the catalog, and filter products by category
 - View product details, pricing, colors, and sizes
 - Register and log in with JWT cookie authentication
 - Add items to a persistent shopping cart
@@ -12,8 +12,50 @@ A full-stack fashion storefront for browsing products, managing a shopping cart 
 - Complete checkout and view order history
 - Update profile information and change passwords
 - Submit product reviews
-- Manage products and store content through the admin area
+- Manage products, featured listings, and order statuses through the admin area
 - Responsive layouts for mobile, tablet, and desktop
+
+## Product Search
+
+Use the search field in the site header to search products by name, description,
+or category. Search results are displayed on the catalog page and can be
+combined with category filters.
+
+The public product endpoint accepts optional query parameters:
+
+```text
+GET /api/products?q=hoodie
+GET /api/products?category=hoodie
+GET /api/products?q=warm&category=hoodie
+```
+
+Only listed products are returned. Search terms are case-insensitive.
+
+## Admin Area
+
+Administrators can open `/admin` to access:
+
+- **Dashboard** - total users, products, and orders, plus recent orders
+- **Products** - create products, view paginated products, update product
+  details, mark products as featured, and unlist products
+- **Orders** - view paginated orders and update order statuses
+
+All admin API routes require an authenticated user with the `admin` role:
+
+```text
+GET    /api/admin/dashboard
+GET    /api/admin/products?page=1&pageSize=10
+POST   /api/admin/products
+PATCH  /api/admin/products/:id
+PATCH  /api/admin/products/:id/featured
+DELETE /api/admin/products/:id
+GET    /api/admin/orders?page=1&pageSize=10
+PATCH  /api/admin/orders/:id
+```
+
+Deleting a product is a soft delete: it is unlisted from the storefront while
+order history is preserved. The product is also removed from existing carts and
+wishlists.
 
 ## Tech Stack
 
@@ -128,7 +170,7 @@ npm run preview  # Preview the production build
 The API is grouped under `/auth` and `/api`.
 
 - `/auth` - registration, login, logout, and authenticated-user data
-- `/api/products` - product browsing and product details
+- `/api/products` - product browsing, search, category filtering, and product details
 - `/api/cart` - cart retrieval and updates
 - `/api/wishlist` - wishlist retrieval and removal
 - `/api/profile` - profile management
