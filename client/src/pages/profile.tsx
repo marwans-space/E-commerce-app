@@ -170,6 +170,14 @@ export function Profile() {
             Manage your personal details and keep track of your shopping.
           </p>
         </div>
+        {user?.role === "admin" && (
+          <Link
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-black px-6 text-sm font-medium text-white transition-colors hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+            to="/admin"
+          >
+            Admin dashboard
+          </Link>
+        )}
       </header>
 
       {isPending ? (

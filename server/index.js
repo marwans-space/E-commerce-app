@@ -44,6 +44,7 @@ app.use(
   profileRoutes,
   reviewRoutes,
   orderRoutes,
+  adminRoutes,
 );
 
 app.use((req, res) => {

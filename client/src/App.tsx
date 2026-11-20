@@ -12,12 +12,23 @@ import { Register } from "./pages/register";
 import { Wishlist } from "./pages/wishlist";
 import { NotFound } from "./pages/NotFound";
 import { Admin } from "./pages/Admin.tsx";
+import { AdminDashboard } from "./pages/AdminDashboard.tsx";
+import { AdminProducts } from "./pages/AdminProducts.tsx";
+import { AdminOrders } from "./pages/AdminOrders.tsx";
 import { ChangePass } from "./pages/ChangePass.tsx";
 
 const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
-  { path: "/admin", element: <Admin /> },
+  {
+    path: "/admin",
+    element: <Admin />,
+    children: [
+      { index: true, element: <AdminDashboard /> },
+      { path: "products", element: <AdminProducts /> },
+      { path: "orders", element: <AdminOrders /> },
+    ],
+  },
   { path: "/change-password", element: <ChangePass /> },
   {
     path: "/",
